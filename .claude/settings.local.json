@@ -12,7 +12,10 @@
       "Bash(ruff check:*)",
       "Bash(pytest:*)",
       "Bash(python -m pytest:*)",
-      "Bash(python3 -m pytest:*)"
+      "Bash(python3 -m pytest:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh issue create:*)",
+      "Bash(gh issue list:*)"
     ]
   }
 }

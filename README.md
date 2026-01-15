@@ -133,6 +133,23 @@ pytest tests/test_integration.py -v -m integration
 pytest tests/ --cov=backtester --cov-report=html
 ```
 
+## Cache Management
+
+Market data is cached in DuckDB files in the `data/` directory to avoid repeated API calls.
+
+```bash
+# Clear all cached data (Linux/Mac)
+rm data/*.duckdb
+
+# Clear all cached data (Windows PowerShell)
+Remove-Item data/*.duckdb
+
+# Check cache stats in Python
+from backtester.data import YFinanceDataHandler
+handler = YFinanceDataHandler()
+print(handler.get_cache_stats())
+```
+
 ## Creating a Custom Strategy
 
 ```python

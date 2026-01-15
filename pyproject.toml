@@ -111,8 +111,10 @@ skip-magic-trailing-comma = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-asyncio_mode = "auto"
 addopts = "-v --tb=short"
+markers = [
+    "integration: marks tests as integration tests (require internet/external services)",
+]
 
 [tool.pyright]
 include = ["src"]

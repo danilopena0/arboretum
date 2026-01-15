@@ -50,6 +50,9 @@ def validate_ohlcv_frame(df: pl.DataFrame | pl.LazyFrame) -> bool:
     schema = df.collect_schema() if isinstance(df, pl.LazyFrame) else df.schema
 
     for col, expected_type in OHLCV_SCHEMA.items():
+        # fetched_at is optional (added during cache storage)
+        if col == "fetched_at":
+            continue
         if col not in schema:
             return False
         # Allow some type flexibility (e.g., Date vs Datetime)
