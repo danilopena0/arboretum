@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(python3 -m pip install:*)",
+      "Bash(uv:*)",
+      "Bash(curl -LsSf https://astral.sh/uv/install.sh)",
+      "Bash(sh:*)",
+      "Bash(~/.local/bin/uv venv:*)",
+      "Bash(~/.local/bin/uv pip install:*)",
+      "Bash(source .venv/bin/activate)",
+      "Bash(ruff check:*)",
+      "Bash(pytest:*)",
+      "Bash(python -m pytest:*)",
+      "Bash(python3 -m pytest:*)"
+    ]
+  }
+}
