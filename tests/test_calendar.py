@@ -90,9 +90,9 @@ class TestTradingCalendarNavigation:
         assert sample_calendar.next_trading_day(date(2024, 1, 6)) == date(2024, 1, 8)
 
         # Include current
-        assert sample_calendar.next_trading_day(
-            date(2024, 1, 2), include_current=True
-        ) == date(2024, 1, 2)
+        assert sample_calendar.next_trading_day(date(2024, 1, 2), include_current=True) == date(
+            2024, 1, 2
+        )
 
         # From a holiday (Jan 9)
         assert sample_calendar.next_trading_day(date(2024, 1, 9)) == date(2024, 1, 10)
@@ -106,9 +106,9 @@ class TestTradingCalendarNavigation:
         assert sample_calendar.prev_trading_day(date(2024, 1, 6)) == date(2024, 1, 5)
 
         # Include current
-        assert sample_calendar.prev_trading_day(
-            date(2024, 1, 3), include_current=True
-        ) == date(2024, 1, 3)
+        assert sample_calendar.prev_trading_day(date(2024, 1, 3), include_current=True) == date(
+            2024, 1, 3
+        )
 
         # From a holiday (Jan 9)
         assert sample_calendar.prev_trading_day(date(2024, 1, 9)) == date(2024, 1, 8)

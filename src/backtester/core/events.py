@@ -6,7 +6,6 @@ All events are immutable (frozen=True) to prevent accidental modification.
 
 from datetime import datetime
 from enum import Enum, auto
-from typing import Self
 
 import msgspec
 
@@ -62,7 +61,7 @@ class MarketEvent(msgspec.Struct, frozen=True, array_like=True):
     def event_type(self) -> EventType:
         return EventType.MARKET
 
-    def with_adjusted_prices(self, adjustment_factor: float) -> Self:
+    def with_adjusted_prices(self, adjustment_factor: float) -> "MarketEvent":
         """Return a new MarketEvent with prices adjusted by the given factor."""
         return MarketEvent(
             timestamp=self.timestamp,

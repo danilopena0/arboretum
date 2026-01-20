@@ -35,7 +35,17 @@ CACHE_TABLE_SCHEMA = """
 """
 
 # Column order for consistent data handling
-OHLCV_COLUMNS = ["timestamp", "ticker", "open", "high", "low", "close", "volume", "adj_close", "fetched_at"]
+OHLCV_COLUMNS = [
+    "timestamp",
+    "ticker",
+    "open",
+    "high",
+    "low",
+    "close",
+    "volume",
+    "adj_close",
+    "fetched_at",
+]
 
 
 def validate_ohlcv_frame(df: pl.DataFrame | pl.LazyFrame) -> bool:
@@ -115,13 +125,9 @@ def normalize_ohlcv_columns(df: pl.DataFrame) -> pl.DataFrame:
     # Ensure timestamp is datetime
     if "timestamp" in df.columns:
         if df.schema["timestamp"] == pl.Date:
-            df = df.with_columns(
-                pl.col("timestamp").cast(pl.Datetime("us")).alias("timestamp")
-            )
+            df = df.with_columns(pl.col("timestamp").cast(pl.Datetime("us")).alias("timestamp"))
         elif df.schema["timestamp"] == pl.Utf8:
-            df = df.with_columns(
-                pl.col("timestamp").str.to_datetime().alias("timestamp")
-            )
+            df = df.with_columns(pl.col("timestamp").str.to_datetime().alias("timestamp"))
 
     # Ensure volume is int64
     if "volume" in df.columns and df.schema["volume"] in (pl.Float64, pl.Float32):

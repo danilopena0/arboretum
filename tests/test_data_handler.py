@@ -44,9 +44,7 @@ class TestDuckDBCache:
         assert len(df) == 5
         assert df["ticker"].unique().to_list() == ["AAPL"]
 
-    def test_get_cached_range(
-        self, populated_cache: DuckDBCache
-    ) -> None:
+    def test_get_cached_range(self, populated_cache: DuckDBCache) -> None:
         """Test getting cached date range."""
         range_result = populated_cache.get_cached_range("AAPL")
         assert range_result is not None
@@ -54,16 +52,12 @@ class TestDuckDBCache:
         assert min_date.date() == date(2024, 1, 15)
         assert max_date.date() == date(2024, 1, 19)
 
-    def test_get_cached_range_missing_ticker(
-        self, populated_cache: DuckDBCache
-    ) -> None:
+    def test_get_cached_range_missing_ticker(self, populated_cache: DuckDBCache) -> None:
         """Test cached range for non-existent ticker."""
         result = populated_cache.get_cached_range("MISSING")
         assert result is None
 
-    def test_get_missing_ranges_full_miss(
-        self, temp_cache: DuckDBCache
-    ) -> None:
+    def test_get_missing_ranges_full_miss(self, temp_cache: DuckDBCache) -> None:
         """Test missing ranges when no data cached."""
         missing = temp_cache.get_missing_ranges(
             "AAPL",
@@ -74,9 +68,7 @@ class TestDuckDBCache:
         assert missing[0][0] == datetime(2024, 1, 1)
         assert missing[0][1] == datetime(2024, 1, 31)
 
-    def test_get_missing_ranges_partial(
-        self, populated_cache: DuckDBCache
-    ) -> None:
+    def test_get_missing_ranges_partial(self, populated_cache: DuckDBCache) -> None:
         """Test missing ranges with partial cache coverage."""
         # Cache has Jan 15-19, request Jan 10-25
         missing = populated_cache.get_missing_ranges(
@@ -118,9 +110,7 @@ class TestDuckDBCache:
         stats = temp_cache.get_stats()
         assert stats["total_rows"] == 5
 
-    def test_clear_ticker(
-        self, populated_cache: DuckDBCache
-    ) -> None:
+    def test_clear_ticker(self, populated_cache: DuckDBCache) -> None:
         """Test clearing data for a specific ticker."""
         populated_cache.clear_ticker("AAPL")
         result = populated_cache.get_cached_data(

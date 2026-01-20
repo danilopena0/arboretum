@@ -1,7 +1,7 @@
 """Tests for performance metrics."""
 
 import math
-from datetime import datetime, timedelta
+from datetime import datetime
 
 import polars as pl
 import pytest

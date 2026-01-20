@@ -46,7 +46,6 @@ class MockBacktestResult:
 def sample_snapshots() -> list[PortfolioSnapshot]:
     """Create sample snapshots spanning multiple months."""
     snapshots = []
-    base_date = datetime(2024, 1, 1)
     equity = 100000.0
 
     # Generate 100 days of data with some volatility
@@ -111,9 +110,7 @@ class TestPlotEquityCurve:
         """Test equity curve with benchmark."""
         benchmark = [100000 + i * 300 for i in range(len(sample_snapshots))]
 
-        fig = plot_equity_curve(
-            sample_snapshots, benchmark_equity=benchmark, benchmark_name="SPY"
-        )
+        fig = plot_equity_curve(sample_snapshots, benchmark_equity=benchmark, benchmark_name="SPY")
 
         assert len(fig.data) == 2
         assert fig.data[1].name == "SPY"
@@ -214,9 +211,7 @@ class TestPlotTradesOnPrice:
 
     def test_plot_trades_on_price_basic(self, mock_result) -> None:
         """Test basic trade plot."""
-        price_data = [
-            (datetime(2024, 1, i), 150 + i * 0.5) for i in range(1, 32)
-        ]
+        price_data = [(datetime(2024, 1, i), 150 + i * 0.5) for i in range(1, 32)]
 
         fig = plot_trades_on_price(mock_result, "AAPL", price_data)
 

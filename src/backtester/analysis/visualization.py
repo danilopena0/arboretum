@@ -5,7 +5,6 @@ Provides functions to create various performance charts from backtest results.
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING
 
 import plotly.graph_objects as go
@@ -17,14 +16,13 @@ from backtester.analysis.metrics import (
     extract_round_trips,
     sharpe_ratio,
     snapshots_to_dataframe,
-    trades_to_dataframe,
 )
-from backtester.core.portfolio import PortfolioSnapshot, Trade
 
 if TYPE_CHECKING:
-    import polars as pl
+    from datetime import datetime
 
     from backtester.core.engine import BacktestResult
+    from backtester.core.portfolio import PortfolioSnapshot, Trade
 
 
 def plot_equity_curve(
@@ -44,10 +42,7 @@ def plot_equity_curve(
     Returns:
         Plotly Figure object
     """
-    if isinstance(result, list):
-        snapshots = result
-    else:
-        snapshots = result.snapshots
+    snapshots = result if isinstance(result, list) else result.snapshots
 
     df = snapshots_to_dataframe(snapshots)
     if df.is_empty():
@@ -62,7 +57,7 @@ def plot_equity_curve(
             y=df["total_equity"].to_list(),
             mode="lines",
             name="Portfolio",
-            line=dict(color="#2196F3", width=2),
+            line={"color": "#2196F3", "width": 2},
             hovertemplate="Date: %{x}<br>Equity: $%{y:,.2f}<extra></extra>",
         )
     )
@@ -75,7 +70,7 @@ def plot_equity_curve(
                 y=benchmark_equity,
                 mode="lines",
                 name=benchmark_name,
-                line=dict(color="#FF9800", width=2, dash="dash"),
+                line={"color": "#FF9800", "width": 2, "dash": "dash"},
                 hovertemplate="Date: %{x}<br>Equity: $%{y:,.2f}<extra></extra>",
             )
         )
@@ -86,7 +81,7 @@ def plot_equity_curve(
         yaxis_title="Portfolio Value ($)",
         hovermode="x unified",
         template="plotly_white",
-        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+        legend={"yanchor": "top", "y": 0.99, "xanchor": "left", "x": 0.01},
     )
 
     return fig
@@ -109,10 +104,7 @@ def plot_cumulative_returns(
     Returns:
         Plotly Figure object
     """
-    if isinstance(result, list):
-        snapshots = result
-    else:
-        snapshots = result.snapshots
+    snapshots = result if isinstance(result, list) else result.snapshots
 
     df = snapshots_to_dataframe(snapshots)
     if df.is_empty():
@@ -130,7 +122,7 @@ def plot_cumulative_returns(
             y=cum_returns,
             mode="lines",
             name="Portfolio",
-            line=dict(color="#2196F3", width=2),
+            line={"color": "#2196F3", "width": 2},
             fill="tozeroy",
             fillcolor="rgba(33, 150, 243, 0.1)",
             hovertemplate="Date: %{x}<br>Return: %{y:+.2f}%<extra></extra>",
@@ -151,7 +143,7 @@ def plot_cumulative_returns(
                 y=cum_bench,
                 mode="lines",
                 name=benchmark_name,
-                line=dict(color="#FF9800", width=2, dash="dash"),
+                line={"color": "#FF9800", "width": 2, "dash": "dash"},
                 hovertemplate="Date: %{x}<br>Return: %{y:+.2f}%<extra></extra>",
             )
         )
@@ -165,7 +157,7 @@ def plot_cumulative_returns(
         yaxis_title="Cumulative Return (%)",
         hovermode="x unified",
         template="plotly_white",
-        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+        legend={"yanchor": "top", "y": 0.99, "xanchor": "left", "x": 0.01},
     )
 
     return fig
@@ -186,10 +178,7 @@ def plot_returns_distribution(
     Returns:
         Plotly Figure object
     """
-    if isinstance(result, list):
-        snapshots = result
-    else:
-        snapshots = result.snapshots
+    snapshots = result if isinstance(result, list) else result.snapshots
 
     df = snapshots_to_dataframe(snapshots)
     if df.is_empty():
@@ -247,10 +236,7 @@ def plot_drawdown(
     Returns:
         Plotly Figure object
     """
-    if isinstance(result, list):
-        snapshots = result
-    else:
-        snapshots = result.snapshots
+    snapshots = result if isinstance(result, list) else result.snapshots
 
     df = snapshots_to_dataframe(snapshots)
     if df.is_empty():
@@ -267,7 +253,7 @@ def plot_drawdown(
             y=dd_pct,
             mode="lines",
             name="Drawdown",
-            line=dict(color="#f44336", width=1),
+            line={"color": "#f44336", "width": 1},
             fill="tozeroy",
             fillcolor="rgba(244, 67, 54, 0.3)",
             hovertemplate="Date: %{x}<br>Drawdown: %{y:.2f}%<extra></extra>",
@@ -334,7 +320,7 @@ def plot_trades_on_price(
             y=list(prices),
             mode="lines",
             name="Price",
-            line=dict(color="#333", width=1),
+            line={"color": "#333", "width": 1},
         )
     )
 
@@ -353,7 +339,7 @@ def plot_trades_on_price(
                 y=list(buy_prices),
                 mode="markers",
                 name="Buy",
-                marker=dict(color="#4CAF50", size=10, symbol="triangle-up"),
+                marker={"color": "#4CAF50", "size": 10, "symbol": "triangle-up"},
                 hovertemplate="Buy<br>Date: %{x}<br>Price: $%{y:.2f}<extra></extra>",
             )
         )
@@ -366,7 +352,7 @@ def plot_trades_on_price(
                 y=list(sell_prices),
                 mode="markers",
                 name="Sell",
-                marker=dict(color="#f44336", size=10, symbol="triangle-down"),
+                marker={"color": "#f44336", "size": 10, "symbol": "triangle-down"},
                 hovertemplate="Sell<br>Date: %{x}<br>Price: $%{y:.2f}<extra></extra>",
             )
         )
@@ -376,7 +362,7 @@ def plot_trades_on_price(
         xaxis_title="Date",
         yaxis_title="Price ($)",
         template="plotly_white",
-        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+        legend={"yanchor": "top", "y": 0.99, "xanchor": "left", "x": 0.01},
     )
 
     return fig
@@ -395,10 +381,7 @@ def plot_trade_pnl(
     Returns:
         Plotly Figure object
     """
-    if isinstance(result, list):
-        trades = result
-    else:
-        trades = result.trades
+    trades = result if isinstance(result, list) else result.trades
 
     round_trips = extract_round_trips(trades)
 
@@ -431,7 +414,7 @@ def plot_trade_pnl(
         yaxis_title="P&L ($)",
         template="plotly_white",
         showlegend=False,
-        xaxis=dict(tickmode="array", tickvals=list(range(len(pnls))), ticktext=labels),
+        xaxis={"tickmode": "array", "tickvals": list(range(len(pnls))), "ticktext": labels},
     )
 
     return fig
@@ -450,10 +433,7 @@ def plot_monthly_returns(
     Returns:
         Plotly Figure object
     """
-    if isinstance(result, list):
-        snapshots = result
-    else:
-        snapshots = result.snapshots
+    snapshots = result if isinstance(result, list) else result.snapshots
 
     df = snapshots_to_dataframe(snapshots)
     if df.is_empty():
@@ -479,7 +459,20 @@ def plot_monthly_returns(
     # Calculate returns
     years = sorted(monthly["year"].unique().to_list())
     months = list(range(1, 13))
-    month_names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    month_names = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+    ]
 
     # Create return matrix
     z = []
@@ -493,10 +486,7 @@ def plot_monthly_returns(
             if len(row) > 0:
                 start = row["start_equity"][0]
                 end = row["end_equity"][0]
-                if start > 0:
-                    ret = (end - start) / start * 100
-                else:
-                    ret = 0.0
+                ret = (end - start) / start * 100 if start > 0 else 0.0
                 year_returns.append(ret)
                 year_text.append(f"{ret:+.1f}%")
             else:
@@ -520,7 +510,7 @@ def plot_monthly_returns(
                 [1, "#4CAF50"],
             ],
             zmid=0,
-            colorbar=dict(title="Return %"),
+            colorbar={"title": "Return %"},
             hovertemplate="Year: %{y}<br>Month: %{x}<br>Return: %{text}<extra></extra>",
         )
     )
@@ -550,10 +540,7 @@ def plot_rolling_sharpe(
     Returns:
         Plotly Figure object
     """
-    if isinstance(result, list):
-        snapshots = result
-    else:
-        snapshots = result.snapshots
+    snapshots = result if isinstance(result, list) else result.snapshots
 
     df = snapshots_to_dataframe(snapshots)
     if df.is_empty() or len(df) < window:
@@ -585,7 +572,7 @@ def plot_rolling_sharpe(
             y=rolling_sharpes,
             mode="lines",
             name="Rolling Sharpe",
-            line=dict(color="#2196F3", width=2),
+            line={"color": "#2196F3", "width": 2},
             hovertemplate="Date: %{x}<br>Sharpe: %{y:.2f}<extra></extra>",
         )
     )
@@ -641,7 +628,7 @@ def plot_portfolio_composition(
             name="Cash",
             stackgroup="one",
             fillcolor="rgba(33, 150, 243, 0.5)",
-            line=dict(color="#2196F3"),
+            line={"color": "#2196F3"},
             hovertemplate="Date: %{x}<br>Cash: $%{y:,.2f}<extra></extra>",
         )
     )
@@ -654,7 +641,7 @@ def plot_portfolio_composition(
             name="Positions",
             stackgroup="one",
             fillcolor="rgba(76, 175, 80, 0.5)",
-            line=dict(color="#4CAF50"),
+            line={"color": "#4CAF50"},
             hovertemplate="Date: %{x}<br>Positions: $%{y:,.2f}<extra></extra>",
         )
     )
@@ -664,7 +651,7 @@ def plot_portfolio_composition(
         xaxis_title="Date",
         yaxis_title="Value ($)",
         template="plotly_white",
-        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+        legend={"yanchor": "top", "y": 0.99, "xanchor": "left", "x": 0.01},
         hovermode="x unified",
     )
 
@@ -708,7 +695,7 @@ def create_performance_dashboard(
         # 1. Equity curve
         fig.add_trace(
             go.Scatter(
-                x=timestamps, y=equity, mode="lines", name="Equity", line=dict(color="#2196F3")
+                x=timestamps, y=equity, mode="lines", name="Equity", line={"color": "#2196F3"}
             ),
             row=1,
             col=1,
@@ -724,7 +711,7 @@ def create_performance_dashboard(
                 mode="lines",
                 name="Drawdown",
                 fill="tozeroy",
-                line=dict(color="#f44336"),
+                line={"color": "#f44336"},
                 fillcolor="rgba(244, 67, 54, 0.3)",
             ),
             row=1,
@@ -771,12 +758,12 @@ def create_performance_dashboard(
                     y=rolling_sharpes,
                     mode="lines",
                     name="Rolling Sharpe",
-                    line=dict(color="#2196F3"),
+                    line={"color": "#2196F3"},
                 ),
                 row=3,
                 col=1,
             )
-            fig.add_hline(y=0, line_dash="dot", line_color="gray", row=3, col=1)
+            fig.add_hline(y=0, line_dash="dot", line_color="gray", row=3, col=1)  # pyright: ignore[reportArgumentType]
 
         # 6. Portfolio composition
         cash = df["cash"].to_list()
@@ -826,7 +813,7 @@ def _empty_figure(title: str) -> go.Figure:
         x=0.5,
         y=0.5,
         showarrow=False,
-        font=dict(size=20, color="gray"),
+        font={"size": 20, "color": "gray"},
     )
     fig.update_layout(title=title, template="plotly_white")
     return fig

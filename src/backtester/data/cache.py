@@ -6,7 +6,7 @@ Uses connection pooling for efficient database access.
 
 from collections.abc import Generator
 from contextlib import contextmanager
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import duckdb
@@ -181,7 +181,7 @@ class DuckDBCache:
         df = normalize_ohlcv_columns(df)
 
         # Add fetched_at timestamp (when this data was retrieved from the API)
-        fetch_time = datetime.now(timezone.utc).replace(tzinfo=None)
+        fetch_time = datetime.now(UTC).replace(tzinfo=None)
         if "fetched_at" not in df.columns:
             df = df.with_columns(pl.lit(fetch_time).alias("fetched_at"))
 
@@ -217,11 +217,12 @@ class DuckDBCache:
             Number of rows deleted
         """
         with self._get_connection() as conn:
-            result = conn.execute(
+            conn.execute(
                 f"DELETE FROM {self.TABLE_NAME} WHERE ticker = ?",
                 [ticker],
             )
-            return result.fetchone()[0] if result else 0
+            count_result = conn.execute("SELECT changes()").fetchone()
+            return count_result[0] if count_result else 0
 
     def clear_all(self) -> None:
         """Remove all cached data."""
@@ -255,6 +256,14 @@ class DuckDBCache:
                     MAX(timestamp) as latest_date
                 FROM {self.TABLE_NAME}
             """).fetchone()
+
+        if result is None:
+            return {
+                "total_rows": 0,
+                "unique_tickers": 0,
+                "earliest_date": None,
+                "latest_date": None,
+            }
 
         return {
             "total_rows": result[0],

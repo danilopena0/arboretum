@@ -4,7 +4,7 @@ Provides trading day detection and calculation by inferring
 from cached market data.
 """
 
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 
 import polars as pl
 
@@ -56,7 +56,9 @@ class TradingCalendar:
         return cls(trading_days)
 
     @classmethod
-    def from_dataframe(cls, df: pl.DataFrame, timestamp_col: str = "timestamp") -> "TradingCalendar":
+    def from_dataframe(
+        cls, df: pl.DataFrame, timestamp_col: str = "timestamp"
+    ) -> "TradingCalendar":
         """Create calendar from a DataFrame.
 
         Args:

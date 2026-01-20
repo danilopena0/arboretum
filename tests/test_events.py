@@ -30,9 +30,7 @@ class TestMarketEvent:
         with pytest.raises(AttributeError):
             sample_market_event.close = 200.0  # type: ignore
 
-    def test_market_event_with_adjusted_prices(
-        self, sample_market_event: MarketEvent
-    ) -> None:
+    def test_market_event_with_adjusted_prices(self, sample_market_event: MarketEvent) -> None:
         """Test price adjustment."""
         adjusted = sample_market_event.with_adjusted_prices(0.5)
         assert adjusted.open == pytest.approx(92.75)

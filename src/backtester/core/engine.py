@@ -289,9 +289,7 @@ class BacktestEngine:
         if order:
             self.broker.submit_order(order)
 
-    def _signal_to_order(
-        self, signal: SignalEvent, market: MarketEvent
-    ) -> OrderEvent | None:
+    def _signal_to_order(self, signal: SignalEvent, market: MarketEvent) -> OrderEvent | None:
         """Convert a signal to an order based on position sizing rules.
 
         Args:

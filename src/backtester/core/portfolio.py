@@ -323,13 +323,11 @@ class Portfolio:
         Returns:
             Dict of non-zero positions
         """
-        return {
-            ticker: pos.quantity
-            for ticker, pos in self.positions.items()
-            if pos.quantity != 0
-        }
+        return {ticker: pos.quantity for ticker, pos in self.positions.items() if pos.quantity != 0}
 
-    def can_afford(self, _ticker: str, quantity: int, price: float, commission: float = 0.0) -> bool:
+    def can_afford(
+        self, _ticker: str, quantity: int, price: float, commission: float = 0.0
+    ) -> bool:
         """Check if portfolio has enough cash for a purchase.
 
         Args:

@@ -171,9 +171,9 @@ class TieredCommission:
     def __init__(self, tiers: list[tuple[int, float]] | None = None):
         # Default: lower rates for higher volume
         self.tiers = tiers or [
-            (0, 0.0035),      # First 300 shares: $0.0035/share
-            (300, 0.002),     # 301-3000: $0.002/share
-            (3000, 0.001),    # 3001-20000: $0.001/share
+            (0, 0.0035),  # First 300 shares: $0.0035/share
+            (300, 0.002),  # 301-3000: $0.002/share
+            (3000, 0.001),  # 3001-20000: $0.001/share
             (20000, 0.0005),  # 20001+: $0.0005/share
         ]
 
@@ -399,9 +399,7 @@ class SimulatedBroker(Broker):
 
         return fills
 
-    def _calculate_fill_price(
-        self, order: OrderEvent, market: MarketEvent
-    ) -> float | None:
+    def _calculate_fill_price(self, order: OrderEvent, market: MarketEvent) -> float | None:
         """Determine fill price for an order.
 
         Args:

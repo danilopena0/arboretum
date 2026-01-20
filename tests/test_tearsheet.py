@@ -15,7 +15,7 @@ from backtester.analysis.tearsheet import (
     _calculate_yearly_returns,
     generate_tearsheet,
 )
-from backtester.core.portfolio import Portfolio, PortfolioSnapshot, Trade
+from backtester.core.portfolio import PortfolioSnapshot, Trade
 
 
 @dataclass
@@ -44,21 +44,11 @@ class TestMonthlyReturns:
     def test_calculate_monthly_returns(self) -> None:
         """Test monthly returns are calculated correctly."""
         snapshots = [
-            PortfolioSnapshot(
-                datetime(2024, 1, 1), 90000, 10000, 100000, 0, 0
-            ),
-            PortfolioSnapshot(
-                datetime(2024, 1, 15), 90000, 15000, 105000, 0, 5000
-            ),
-            PortfolioSnapshot(
-                datetime(2024, 1, 31), 90000, 20000, 110000, 0, 10000
-            ),
-            PortfolioSnapshot(
-                datetime(2024, 2, 15), 90000, 18000, 108000, 0, 8000
-            ),
-            PortfolioSnapshot(
-                datetime(2024, 2, 28), 90000, 22000, 112000, 0, 12000
-            ),
+            PortfolioSnapshot(datetime(2024, 1, 1), 90000, 10000, 100000, 0, 0),
+            PortfolioSnapshot(datetime(2024, 1, 15), 90000, 15000, 105000, 0, 5000),
+            PortfolioSnapshot(datetime(2024, 1, 31), 90000, 20000, 110000, 0, 10000),
+            PortfolioSnapshot(datetime(2024, 2, 15), 90000, 18000, 108000, 0, 8000),
+            PortfolioSnapshot(datetime(2024, 2, 28), 90000, 22000, 112000, 0, 12000),
         ]
 
         from backtester.analysis.metrics import snapshots_to_dataframe
@@ -91,18 +81,10 @@ class TestYearlyReturns:
     def test_calculate_yearly_returns(self) -> None:
         """Test yearly returns are calculated correctly."""
         snapshots = [
-            PortfolioSnapshot(
-                datetime(2023, 1, 1), 90000, 10000, 100000, 0, 0
-            ),
-            PortfolioSnapshot(
-                datetime(2023, 12, 31), 90000, 30000, 120000, 0, 20000
-            ),
-            PortfolioSnapshot(
-                datetime(2024, 1, 1), 90000, 30000, 120000, 0, 20000
-            ),
-            PortfolioSnapshot(
-                datetime(2024, 12, 31), 90000, 50000, 140000, 0, 40000
-            ),
+            PortfolioSnapshot(datetime(2023, 1, 1), 90000, 10000, 100000, 0, 0),
+            PortfolioSnapshot(datetime(2023, 12, 31), 90000, 30000, 120000, 0, 20000),
+            PortfolioSnapshot(datetime(2024, 1, 1), 90000, 30000, 120000, 0, 20000),
+            PortfolioSnapshot(datetime(2024, 12, 31), 90000, 50000, 140000, 0, 40000),
         ]
 
         from backtester.analysis.metrics import snapshots_to_dataframe
@@ -325,7 +307,7 @@ class TestTearsheetToHtml:
     def test_to_html_file_write(self, sample_tearsheet: Tearsheet, tmp_path) -> None:
         """Test HTML can be written to file."""
         filepath = tmp_path / "report.html"
-        html = sample_tearsheet.to_html(str(filepath))
+        sample_tearsheet.to_html(str(filepath))
 
         assert filepath.exists()
         content = filepath.read_text()
@@ -385,9 +367,7 @@ class TestGenerateTearsheet:
 
         benchmark_returns = pl.Series([0.001] * 10)
 
-        tearsheet = generate_tearsheet(
-            result, benchmark="SPY", benchmark_returns=benchmark_returns
-        )
+        tearsheet = generate_tearsheet(result, benchmark="SPY", benchmark_returns=benchmark_returns)
 
         assert tearsheet.benchmark_ticker == "SPY"
         assert tearsheet.benchmark_return is not None

@@ -12,7 +12,6 @@ import polars as pl
 
 from backtester.core.portfolio import PortfolioSnapshot, Trade
 
-
 # =============================================================================
 # Data Preparation
 # =============================================================================
@@ -202,7 +201,7 @@ def volatility(returns: pl.Series, periods_per_year: float = 252.0) -> float:
     if std is None:
         return 0.0
 
-    return std * math.sqrt(periods_per_year)
+    return float(std) * math.sqrt(periods_per_year)  # pyright: ignore[reportArgumentType]
 
 
 def downside_deviation(
@@ -236,7 +235,7 @@ def downside_deviation(
     if downside_sq is None or downside_sq == 0:
         return 0.0
 
-    return math.sqrt(downside_sq) * math.sqrt(periods_per_year)
+    return math.sqrt(float(downside_sq)) * math.sqrt(periods_per_year)  # pyright: ignore[reportArgumentType]
 
 
 # =============================================================================
@@ -373,7 +372,8 @@ def max_drawdown(equity_series: pl.Series) -> float:
         return 0.0
 
     dd = drawdown_series(equity_series)
-    return dd.max() or 0.0
+    max_val = dd.max()
+    return float(max_val) if max_val is not None else 0.0  # pyright: ignore[reportArgumentType]
 
 
 def max_drawdown_duration(
@@ -400,7 +400,7 @@ def max_drawdown_duration(
     max_duration = timedelta(0)
     current_start: datetime | None = None
 
-    for i, (is_dd, ts) in enumerate(zip(in_drawdown, timestamps)):
+    for _i, (is_dd, ts) in enumerate(zip(in_drawdown, timestamps)):
         if is_dd and current_start is None:
             current_start = ts
         elif not is_dd and current_start is not None:
@@ -429,7 +429,8 @@ def average_drawdown(equity_series: pl.Series) -> float:
         return 0.0
 
     dd = drawdown_series(equity_series)
-    return dd.mean() or 0.0
+    mean_val = dd.mean()
+    return float(mean_val) if mean_val is not None else 0.0  # pyright: ignore[reportArgumentType]
 
 
 # =============================================================================
@@ -798,10 +799,7 @@ def calculate_metrics(
     returns = calculate_returns(equity)
 
     # Calculate duration
-    if len(timestamps) >= 2:
-        duration_days = (timestamps[-1] - timestamps[0]).days
-    else:
-        duration_days = 0
+    duration_days = (timestamps[-1] - timestamps[0]).days if len(timestamps) >= 2 else 0
 
     final_equity = equity[-1] if len(equity) > 0 else initial_capital
 

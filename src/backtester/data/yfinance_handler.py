@@ -167,9 +167,7 @@ class YFinanceDataHandler(DataHandler):
 
             # Fetch missing data
             for range_start, range_end in missing_ranges:
-                fetched = self._fetch_from_yfinance(
-                    ticker, range_start, range_end, interval
-                )
+                fetched = self._fetch_from_yfinance(ticker, range_start, range_end, interval)
                 if not fetched.is_empty():
                     self.cache.store_data(fetched)
 

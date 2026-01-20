@@ -20,7 +20,8 @@
       "Bash(gh api:*)",
       "Bash(gh issue close:*)",
       "Bash(python3:*)",
-      "Bash(PYTHONPATH=./src python3:*)"
+      "Bash(PYTHONPATH=./src python3:*)",
+      "Bash(pre-commit run:*)"
     ]
   }
 }

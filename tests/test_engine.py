@@ -24,9 +24,7 @@ class MockDataHandler(DataHandler):
     def get_latest_bar(self, _ticker):
         return self._bars[-1] if self._bars else None
 
-    def iter_bars(
-        self, _tickers, _start, _end, _interval="1d"
-    ) -> Iterator[MarketEvent]:
+    def iter_bars(self, _tickers, _start, _end, _interval="1d") -> Iterator[MarketEvent]:
         yield from self._bars
 
     def update_bars(self) -> bool:

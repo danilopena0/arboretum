@@ -8,19 +8,20 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict, dataclass
-from datetime import datetime
-from typing import TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, cast
 
 import polars as pl
 
 from backtester.analysis.metrics import (
     PerformanceMetrics,
     calculate_metrics,
-    calculate_returns,
     snapshots_to_dataframe,
 )
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from backtester.core.engine import BacktestResult
 
 
@@ -104,7 +105,9 @@ class Tearsheet:
         lines.append(f"  Annual Return:   {self.metrics.annualized_return * 100:+.2f}%")
 
         if self.benchmark_ticker and self.benchmark_return is not None:
-            lines.append(f"  Benchmark ({self.benchmark_ticker}): {self.benchmark_return * 100:+.2f}%")
+            lines.append(
+                f"  Benchmark ({self.benchmark_ticker}): {self.benchmark_return * 100:+.2f}%"
+            )
             excess = self.metrics.total_return - self.benchmark_return
             lines.append(f"  Excess Return:   {excess * 100:+.2f}%")
         lines.append("")
@@ -138,7 +141,9 @@ class Tearsheet:
             lines.append(f"  Number of Trades:   {self.metrics.num_trades}")
             lines.append(f"  Win Rate:           {self.metrics.win_rate * 100:.1f}%")
             lines.append(f"  Profit Factor:      {self._format_ratio(self.metrics.profit_factor)}")
-            lines.append(f"  Avg Win/Loss:       {self._format_ratio(self.metrics.avg_win_loss_ratio)}")
+            lines.append(
+                f"  Avg Win/Loss:       {self._format_ratio(self.metrics.avg_win_loss_ratio)}"
+            )
             lines.append(f"  Avg Trade Duration: {self.metrics.avg_trade_duration_days:.1f} days")
             lines.append(f"  Expectancy:         ${self.metrics.expectancy:,.2f}")
             lines.append("")
@@ -213,9 +218,7 @@ class Tearsheet:
         }
 
         # Replace infinity values with strings for JSON
-        result = _replace_infinity(result)
-
-        return result
+        return cast("dict[str, Any]", _replace_infinity(result))
 
     def to_json(self, indent: int = 2) -> str:
         """Convert tearsheet to JSON string.
@@ -240,7 +243,7 @@ class Tearsheet:
         html = _generate_html_report(self)
 
         if filepath:
-            with open(filepath, "w", encoding="utf-8") as f:
+            with Path(filepath).open("w", encoding="utf-8") as f:
                 f.write(html)
 
         return html
@@ -292,10 +295,7 @@ def _calculate_monthly_returns(snapshots_df: pl.DataFrame) -> list[MonthlyReturn
     for row in monthly.iter_rows(named=True):
         start_eq = row["start_equity"]
         end_eq = row["end_equity"]
-        if start_eq > 0:
-            ret = (end_eq - start_eq) / start_eq
-        else:
-            ret = 0.0
+        ret = (end_eq - start_eq) / start_eq if start_eq > 0 else 0.0
         results.append(MonthlyReturns(year=row["year"], month=row["month"], return_pct=ret))
 
     return results
@@ -330,10 +330,7 @@ def _calculate_yearly_returns(snapshots_df: pl.DataFrame) -> list[YearlyReturns]
     for row in yearly.iter_rows(named=True):
         start_eq = row["start_equity"]
         end_eq = row["end_equity"]
-        if start_eq > 0:
-            ret = (end_eq - start_eq) / start_eq
-        else:
-            ret = 0.0
+        ret = (end_eq - start_eq) / start_eq if start_eq > 0 else 0.0
         results.append(YearlyReturns(year=row["year"], return_pct=ret))
 
     return results
@@ -353,7 +350,7 @@ def _generate_html_report(tearsheet: Tearsheet) -> str:
     # Monthly returns heatmap data
     monthly_html = ""
     if tearsheet.monthly_returns:
-        years = sorted(set(mr.year for mr in tearsheet.monthly_returns))
+        years = sorted({mr.year for mr in tearsheet.monthly_returns})
         monthly_html = "<h3>Monthly Returns</h3><table class='monthly-returns'>"
         monthly_html += "<tr><th>Year</th>"
         for month in range(1, 13):
@@ -383,7 +380,8 @@ def _generate_html_report(tearsheet: Tearsheet) -> str:
     benchmark_html = ""
     if tearsheet.benchmark_ticker and tearsheet.benchmark_return is not None:
         excess = tearsheet.metrics.total_return - tearsheet.benchmark_return
-        benchmark_html = f"""
+        benchmark_html = (
+            f"""
         <h3>Benchmark Comparison</h3>
         <table class="metrics-table">
             <tr><td>Benchmark</td><td>{tearsheet.benchmark_ticker}</td></tr>
@@ -392,7 +390,10 @@ def _generate_html_report(tearsheet: Tearsheet) -> str:
             <tr><td>Beta</td><td>{m.beta:.2f}</td></tr>
             <tr><td>Alpha</td><td>{m.alpha * 100:+.2f}%</td></tr>
         </table>
-        """ if m.beta is not None and m.alpha is not None else ""
+        """
+            if m.beta is not None and m.alpha is not None
+            else ""
+        )
 
     html = f"""<!DOCTYPE html>
 <html>
