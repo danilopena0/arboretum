@@ -133,6 +133,25 @@ pytest tests/test_integration.py -v -m integration
 pytest tests/ --cov=backtester --cov-report=html
 ```
 
+## Development
+
+### Pre-commit Hooks
+
+This project uses pre-commit to run linting, formatting, and type checking before each commit.
+
+```bash
+# Install pre-commit
+pip install pre-commit
+
+# Install the git hooks
+pre-commit install
+```
+
+The following checks run automatically on commit:
+- **ruff** - Linting with auto-fix
+- **ruff-format** - Code formatting
+- **pyright** - Type checking
+
 ## Cache Management
 
 Market data is cached in DuckDB files in the `data/` directory to avoid repeated API calls.
