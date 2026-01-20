@@ -389,5 +389,5 @@ class TestVisualizationWriteToFile:
         fig.write_html(str(filepath))
 
         assert filepath.exists()
-        content = filepath.read_text()
+        content = filepath.read_text(encoding="utf-8")
         assert "plotly" in content.lower()

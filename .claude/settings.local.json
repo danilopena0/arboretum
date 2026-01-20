@@ -22,7 +22,8 @@
       "Bash(python3:*)",
       "Bash(PYTHONPATH=./src python3:*)",
       "Bash(pre-commit run:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(.venv/bin/python -m pytest:*)"
     ]
   }
 }

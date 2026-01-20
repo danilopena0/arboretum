@@ -217,12 +217,18 @@ class DuckDBCache:
             Number of rows deleted
         """
         with self._get_connection() as conn:
+            # Count rows before deletion (DuckDB doesn't have changes() like SQLite)
+            count_result = conn.execute(
+                f"SELECT COUNT(*) FROM {self.TABLE_NAME} WHERE ticker = ?",
+                [ticker],
+            ).fetchone()
+            count = count_result[0] if count_result else 0
+
             conn.execute(
                 f"DELETE FROM {self.TABLE_NAME} WHERE ticker = ?",
                 [ticker],
             )
-            count_result = conn.execute("SELECT changes()").fetchone()
-            return count_result[0] if count_result else 0
+            return count
 
     def clear_all(self) -> None:
         """Remove all cached data."""
