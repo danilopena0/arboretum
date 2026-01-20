@@ -72,6 +72,9 @@ notebooks/*
 # =============================================================================
 # Proprietary / IP - Custom strategies
 # =============================================================================
+# Strategy ideas and research (keep private)
+src/backtester/strategies/ideas/
+
 # Add your proprietary strategy files here:
 # src/backtester/strategies/my_secret_strategy.py
 # src/backtester/strategies/proprietary/

@@ -21,7 +21,8 @@
       "Bash(gh issue close:*)",
       "Bash(python3:*)",
       "Bash(PYTHONPATH=./src python3:*)",
-      "Bash(pre-commit run:*)"
+      "Bash(pre-commit run:*)",
+      "WebSearch"
     ]
   }
 }
