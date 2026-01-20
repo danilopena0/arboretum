@@ -15,7 +15,12 @@
       "Bash(python3 -m pytest:*)",
       "Bash(gh repo view:*)",
       "Bash(gh issue create:*)",
-      "Bash(gh issue list:*)"
+      "Bash(gh issue list:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh api:*)",
+      "Bash(gh issue close:*)",
+      "Bash(python3:*)",
+      "Bash(PYTHONPATH=./src python3:*)"
     ]
   }
 }

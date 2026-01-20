@@ -1,4 +1,4 @@
-"""Performance analysis, metrics, and visualization."""
+"""Performance analysis, metrics, visualization, and tearsheet generation."""
 
 from backtester.analysis.metrics import (
     PerformanceMetrics,
@@ -28,8 +28,27 @@ from backtester.analysis.metrics import (
     volatility,
     win_rate,
 )
+from backtester.analysis.tearsheet import (
+    MonthlyReturns,
+    Tearsheet,
+    YearlyReturns,
+    generate_tearsheet,
+)
+from backtester.analysis.visualization import (
+    create_performance_dashboard,
+    plot_cumulative_returns,
+    plot_drawdown,
+    plot_equity_curve,
+    plot_monthly_returns,
+    plot_portfolio_composition,
+    plot_returns_distribution,
+    plot_rolling_sharpe,
+    plot_trade_pnl,
+    plot_trades_on_price,
+)
 
 __all__ = [
+    # Metrics
     "PerformanceMetrics",
     "RoundTripTrade",
     "alpha",
@@ -56,4 +75,20 @@ __all__ = [
     "trades_to_dataframe",
     "volatility",
     "win_rate",
+    # Tearsheet
+    "MonthlyReturns",
+    "Tearsheet",
+    "YearlyReturns",
+    "generate_tearsheet",
+    # Visualization
+    "create_performance_dashboard",
+    "plot_cumulative_returns",
+    "plot_drawdown",
+    "plot_equity_curve",
+    "plot_monthly_returns",
+    "plot_portfolio_composition",
+    "plot_returns_distribution",
+    "plot_rolling_sharpe",
+    "plot_trade_pnl",
+    "plot_trades_on_price",
 ]
