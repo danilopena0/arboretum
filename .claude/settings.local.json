@@ -23,7 +23,11 @@
       "Bash(PYTHONPATH=./src python3:*)",
       "Bash(pre-commit run:*)",
       "WebSearch",
-      "Bash(.venv/bin/python -m pytest:*)"
+      "Bash(.venv/bin/python -m pytest:*)",
+      "Bash(wc:*)",
+      "Bash(.venv/bin/python:*)",
+      "Bash(python scripts/backtest_ma_crossover.py:*)",
+      "Bash(.venv/bin/ruff check:*)"
     ]
   }
 }

@@ -42,12 +42,20 @@ def snapshots_to_dataframe(snapshots: list[PortfolioSnapshot]) -> pl.DataFrame:
     return pl.DataFrame(
         {
             "timestamp": [s.timestamp for s in snapshots],
-            "cash": [s.cash for s in snapshots],
-            "positions_value": [s.positions_value for s in snapshots],
-            "total_equity": [s.total_equity for s in snapshots],
-            "realized_pnl": [s.realized_pnl for s in snapshots],
-            "unrealized_pnl": [s.unrealized_pnl for s in snapshots],
-        }
+            "cash": [float(s.cash) for s in snapshots],
+            "positions_value": [float(s.positions_value) for s in snapshots],
+            "total_equity": [float(s.total_equity) for s in snapshots],
+            "realized_pnl": [float(s.realized_pnl) for s in snapshots],
+            "unrealized_pnl": [float(s.unrealized_pnl) for s in snapshots],
+        },
+        schema={
+            "timestamp": pl.Datetime("us"),
+            "cash": pl.Float64,
+            "positions_value": pl.Float64,
+            "total_equity": pl.Float64,
+            "realized_pnl": pl.Float64,
+            "unrealized_pnl": pl.Float64,
+        },
     )
 
 

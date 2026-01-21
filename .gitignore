@@ -80,6 +80,27 @@ src/backtester/strategies/ideas/
 # src/backtester/strategies/proprietary/
 
 # =============================================================================
+# Backtest Results & Research (contains performance insights)
+# =============================================================================
+# Backtest output files
+results/
+reports/
+tearsheets/
+*.html
+!docs/*.html
+
+# Parameter optimization results
+optimization/
+param_sweep/
+*.json
+!pyproject.toml
+!package.json
+
+# Research scripts and analysis
+scripts/
+analysis_output/
+
+# =============================================================================
 # Misc
 # =============================================================================
 .DS_Store

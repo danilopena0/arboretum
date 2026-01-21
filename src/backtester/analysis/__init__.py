@@ -35,6 +35,7 @@ from backtester.analysis.tearsheet import (
     generate_tearsheet,
 )
 from backtester.analysis.visualization import (
+    create_comparison_dashboard,
     create_performance_dashboard,
     plot_cumulative_returns,
     plot_drawdown,
@@ -63,6 +64,7 @@ __all__ = [
     "calculate_metrics",
     "calculate_returns",
     "calmar_ratio",
+    "create_comparison_dashboard",
     "create_performance_dashboard",
     "downside_deviation",
     "drawdown_series",

@@ -527,7 +527,7 @@ def plot_monthly_returns(
 
 def plot_rolling_sharpe(
     result: BacktestResult | list[PortfolioSnapshot],
-    window: int = 63,  # ~3 months
+    window: int = 252,  # 12 months
     title: str = "Rolling Sharpe Ratio",
 ) -> go.Figure:
     """Plot rolling Sharpe ratio over time.
@@ -679,7 +679,7 @@ def create_performance_dashboard(
             "Drawdown",
             "Returns Distribution",
             "P&L per Trade",
-            "Rolling Sharpe (63-day)",
+            "Rolling Sharpe (252-day)",
             "Portfolio Composition",
         ),
         vertical_spacing=0.12,
@@ -740,7 +740,7 @@ def create_performance_dashboard(
             )
 
         # 5. Rolling Sharpe
-        window = 63
+        window = 252
         if len(returns) > window:
             import polars as pl
 
@@ -799,6 +799,150 @@ def create_performance_dashboard(
         showlegend=False,
         template="plotly_white",
     )
+
+    return fig
+
+
+def create_comparison_dashboard(
+    results: dict[str, BacktestResult],
+    title: str = "Strategy Comparison Dashboard",
+) -> go.Figure:
+    """Create a dashboard comparing multiple strategy results.
+
+    Args:
+        results: Dict mapping strategy names to their BacktestResults
+        title: Dashboard title
+
+    Returns:
+        Plotly Figure with comparison subplots
+    """
+    import polars as pl
+
+    # Define colors for up to 6 strategies
+    colors = ["#2196F3", "#FF9800", "#4CAF50", "#f44336", "#9C27B0", "#795548"]
+
+    fig = make_subplots(
+        rows=2,
+        cols=2,
+        subplot_titles=(
+            "Equity Curve",
+            "Drawdown",
+            "Cumulative Returns (%)",
+            "Rolling Sharpe (252-day)",
+        ),
+        vertical_spacing=0.12,
+        horizontal_spacing=0.08,
+    )
+
+    for i, (name, result) in enumerate(results.items()):
+        color = colors[i % len(colors)]
+        df = snapshots_to_dataframe(result.snapshots)
+
+        if df.is_empty():
+            continue
+
+        timestamps = df["timestamp"].to_list()
+        equity = df["total_equity"].to_list()
+        initial_equity = equity[0]
+
+        # 1. Equity Curve
+        fig.add_trace(
+            go.Scatter(
+                x=timestamps,
+                y=equity,
+                mode="lines",
+                name=name,
+                line={"color": color, "width": 2},
+                legendgroup=name,
+                showlegend=True,
+                hovertemplate=f"{name}<br>Date: %{{x}}<br>Equity: $%{{y:,.0f}}<extra></extra>",
+            ),
+            row=1,
+            col=1,
+        )
+
+        # 2. Drawdown
+        dd = drawdown_series(df["total_equity"])
+        dd_pct = [-d * 100 for d in dd.to_list()]
+        fig.add_trace(
+            go.Scatter(
+                x=timestamps,
+                y=dd_pct,
+                mode="lines",
+                name=name,
+                line={"color": color, "width": 1.5},
+                fill="tozeroy",
+                fillcolor=f"rgba{(*[int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)], 0.2)}",
+                legendgroup=name,
+                showlegend=False,
+                hovertemplate=f"{name}<br>Date: %{{x}}<br>Drawdown: %{{y:.1f}}%<extra></extra>",
+            ),
+            row=1,
+            col=2,
+        )
+
+        # 3. Cumulative Returns
+        cum_returns = [(e / initial_equity - 1) * 100 for e in equity]
+        fig.add_trace(
+            go.Scatter(
+                x=timestamps,
+                y=cum_returns,
+                mode="lines",
+                name=name,
+                line={"color": color, "width": 2},
+                legendgroup=name,
+                showlegend=False,
+                hovertemplate=f"{name}<br>Date: %{{x}}<br>Return: %{{y:+.1f}}%<extra></extra>",
+            ),
+            row=2,
+            col=1,
+        )
+
+        # 4. Rolling Sharpe
+        returns = calculate_returns(df["total_equity"])
+        window = 252
+        if len(returns) > window:
+            rolling_sharpes = []
+            valid_timestamps = []
+            for j in range(window, len(returns)):
+                window_returns = pl.Series(returns[j - window : j].to_list())
+                sr = sharpe_ratio(window_returns, risk_free_rate=0.0, periods_per_year=252)
+                rolling_sharpes.append(sr)
+                valid_timestamps.append(timestamps[j])
+
+            fig.add_trace(
+                go.Scatter(
+                    x=valid_timestamps,
+                    y=rolling_sharpes,
+                    mode="lines",
+                    name=name,
+                    line={"color": color, "width": 2},
+                    legendgroup=name,
+                    showlegend=False,
+                    hovertemplate=f"{name}<br>Date: %{{x}}<br>Sharpe: %{{y:.2f}}<extra></extra>",
+                ),
+                row=2,
+                col=2,
+            )
+
+    # Reference lines
+    fig.add_hline(y=0, line_dash="dot", line_color="gray", opacity=0.5, row=2, col=1)  # pyright: ignore[reportArgumentType]
+    fig.add_hline(y=0, line_dash="dot", line_color="gray", opacity=0.5, row=2, col=2)  # pyright: ignore[reportArgumentType]
+    fig.add_hline(y=1, line_dash="dash", line_color="gray", opacity=0.3, row=2, col=2)  # pyright: ignore[reportArgumentType]
+
+    fig.update_layout(
+        title=title,
+        height=700,
+        template="plotly_white",
+        legend={"yanchor": "top", "y": 0.99, "xanchor": "left", "x": 1.02},
+        hovermode="x unified",
+    )
+
+    # Update y-axis labels
+    fig.update_yaxes(title_text="Value ($)", row=1, col=1)
+    fig.update_yaxes(title_text="Drawdown (%)", row=1, col=2)
+    fig.update_yaxes(title_text="Return (%)", row=2, col=1)
+    fig.update_yaxes(title_text="Sharpe Ratio", row=2, col=2)
 
     return fig
 
