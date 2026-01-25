@@ -5,6 +5,10 @@ from backtester.strategies.examples.bollinger_band import (
     BollingerBandMeanReversion,
     DualBollingerBand,
 )
+from backtester.strategies.examples.ema_crossover import (
+    DualEMACrossover,
+    EMACrossover,
+)
 from backtester.strategies.examples.momentum import (
     AbsoluteMomentum,
     DualMomentum,
@@ -25,9 +29,11 @@ __all__ = [
     "BollingerBandBreakout",
     "BollingerBandMeanReversion",
     "DualBollingerBand",
+    "DualEMACrossover",
     "DualMomentum",
     "DualMovingAverageCrossover",
     "DualRSIMeanReversion",
+    "EMACrossover",
     "MovingAverageCrossover",
     "PriceMomentum",
     "RSIMeanReversion",

@@ -28,6 +28,14 @@ from backtester.analysis.metrics import (
     volatility,
     win_rate,
 )
+from backtester.analysis.results_store import ResultsStore
+from backtester.analysis.scanner import (
+    ScanResult,
+    ScanSummary,
+    StrategyScanner,
+    scan_ema_crossover,
+    scan_ma_crossover,
+)
 from backtester.analysis.tearsheet import (
     MonthlyReturns,
     Tearsheet,
@@ -51,7 +59,11 @@ from backtester.analysis.visualization import (
 __all__ = [
     "MonthlyReturns",
     "PerformanceMetrics",
+    "ResultsStore",
     "RoundTripTrade",
+    "ScanResult",
+    "ScanSummary",
+    "StrategyScanner",
     "Tearsheet",
     "YearlyReturns",
     "alpha",
@@ -83,6 +95,8 @@ __all__ = [
     "plot_trade_pnl",
     "plot_trades_on_price",
     "profit_factor",
+    "scan_ema_crossover",
+    "scan_ma_crossover",
     "sharpe_ratio",
     "snapshots_to_dataframe",
     "sortino_ratio",

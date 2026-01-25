@@ -8,9 +8,11 @@ from backtester.core.events import MarketEvent, SignalType
 from backtester.strategies.examples import (
     BollingerBandBreakout,
     BollingerBandMeanReversion,
+    DualEMACrossover,
     DualMomentum,
     DualMovingAverageCrossover,
     DualRSIMeanReversion,
+    EMACrossover,
     MovingAverageCrossover,
     PriceMomentum,
     RSIMeanReversion,
@@ -259,6 +261,118 @@ class TestMovingAverageCrossover:
         assert len(long_signals) == 1
 
 
+class TestEMACrossover:
+    """Tests for EMACrossover strategy."""
+
+    def test_strategy_initialization(self) -> None:
+        """Test strategy initializes correctly."""
+        strategy = EMACrossover(fast_period=5, slow_period=10)
+        assert strategy.fast_period == 5
+        assert strategy.slow_period == 10
+
+    def test_no_signal_during_warmup(self) -> None:
+        """Test no signals during EMA warmup."""
+        strategy = EMACrossover(fast_period=5, slow_period=10)
+
+        # Feed less than slow_period bars - EMA needs time to stabilize
+        for i in range(8):
+            event = create_market_event("AAPL", 100.0 + i, i)
+            signal = strategy.on_market(event)
+            assert signal is None
+
+    def test_bullish_crossover_signal(self) -> None:
+        """Test bullish crossover generates LONG signal."""
+        strategy = EMACrossover(fast_period=3, slow_period=5)
+        strategy.set_tickers(["AAPL"])
+
+        signals = []
+        # Price trending up - should trigger bullish crossover
+        prices = [100, 100, 100, 100, 100, 101, 102, 103, 105, 108]
+        for i, price in enumerate(prices):
+            event = create_market_event("AAPL", price, i)
+            signal = strategy.on_market(event)
+            if signal:
+                signals.append(signal)
+
+        # Should have generated at least one LONG signal
+        long_signals = [s for s in signals if s.signal_type == SignalType.LONG]
+        assert len(long_signals) >= 1
+
+    def test_bearish_crossover_signal(self) -> None:
+        """Test bearish crossover generates EXIT signal."""
+        strategy = EMACrossover(fast_period=3, slow_period=5)
+        strategy.set_tickers(["AAPL"])
+
+        signals = []
+        # Price up then down - should trigger both crossovers
+        prices = [100, 100, 100, 100, 100, 105, 110, 115, 110, 105, 100, 95, 90]
+        for i, price in enumerate(prices):
+            event = create_market_event("AAPL", price, i)
+            signal = strategy.on_market(event)
+            if signal:
+                signals.append(signal)
+
+        # Should have both LONG and EXIT signals
+        signal_types = [s.signal_type for s in signals]
+        assert SignalType.LONG in signal_types
+        assert SignalType.EXIT in signal_types
+
+    def test_no_duplicate_signals(self) -> None:
+        """Test strategy doesn't generate duplicate signals."""
+        strategy = EMACrossover(fast_period=3, slow_period=5)
+        strategy.set_tickers(["AAPL"])
+
+        signals = []
+        # Sustained uptrend - should only get one LONG signal
+        prices = [100, 100, 100, 100, 100, 102, 104, 106, 108, 110, 112, 114, 116]
+        for i, price in enumerate(prices):
+            event = create_market_event("AAPL", price, i)
+            signal = strategy.on_market(event)
+            if signal:
+                signals.append(signal)
+
+        # Should have exactly one LONG signal (not multiple)
+        long_signals = [s for s in signals if s.signal_type == SignalType.LONG]
+        assert len(long_signals) == 1
+
+    def test_reset(self) -> None:
+        """Test EMA Crossover resets properly."""
+        strategy = EMACrossover(fast_period=3, slow_period=5)
+        strategy.set_tickers(["AAPL"])
+
+        # Generate some state
+        for i in range(10):
+            event = create_market_event("AAPL", 100.0 + i, i)
+            strategy.on_market(event)
+
+        strategy.reset()
+
+        # After reset, should need warmup again
+        event = create_market_event("AAPL", 110.0, 0)
+        signal = strategy.on_market(event)
+        assert signal is None  # Needs warmup
+
+    def test_multi_ticker_independence(self) -> None:
+        """Test EMA Crossover maintains independent state per ticker."""
+        strategy = EMACrossover(fast_period=3, slow_period=5)
+        strategy.set_tickers(["AAPL", "MSFT"])
+
+        # Feed different patterns to each ticker
+        for i in range(10):
+            # AAPL uptrend
+            aapl_event = create_market_event("AAPL", 100.0 + i * 2, i)
+            strategy.on_market(aapl_event)
+
+            # MSFT downtrend
+            msft_event = create_market_event("MSFT", 100.0 - i * 2, i)
+            strategy.on_market(msft_event)
+
+        # Each ticker should have its own EMA instances
+        assert "AAPL" in strategy._fast_emas
+        assert "MSFT" in strategy._fast_emas
+        assert strategy._fast_emas["AAPL"] is not strategy._fast_emas["MSFT"]
+
+
 class TestRSIMeanReversion:
     """Tests for RSIMeanReversion strategy."""
 
@@ -468,6 +582,40 @@ class TestDualStrategies:
 
         short_signals = [s for s in signals if s.signal_type == SignalType.SHORT]
         assert len(short_signals) >= 1
+
+    def test_dual_ema_crossover_short_signal(self) -> None:
+        """Test DualEMACrossover generates SHORT signals."""
+        strategy = DualEMACrossover(fast_period=3, slow_period=5)
+        strategy.set_tickers(["AAPL"])
+
+        signals = []
+        # Downtrend
+        prices = [100, 100, 100, 100, 100, 98, 96, 94, 92, 90]
+        for i, price in enumerate(prices):
+            event = create_market_event("AAPL", price, i)
+            signal = strategy.on_market(event)
+            if signal:
+                signals.append(signal)
+
+        short_signals = [s for s in signals if s.signal_type == SignalType.SHORT]
+        assert len(short_signals) >= 1
+
+    def test_dual_ema_crossover_long_signal(self) -> None:
+        """Test DualEMACrossover generates LONG signals."""
+        strategy = DualEMACrossover(fast_period=3, slow_period=5)
+        strategy.set_tickers(["AAPL"])
+
+        signals = []
+        # Uptrend
+        prices = [100, 100, 100, 100, 100, 102, 104, 106, 108, 110]
+        for i, price in enumerate(prices):
+            event = create_market_event("AAPL", price, i)
+            signal = strategy.on_market(event)
+            if signal:
+                signals.append(signal)
+
+        long_signals = [s for s in signals if s.signal_type == SignalType.LONG]
+        assert len(long_signals) >= 1
 
     def test_dual_rsi_short_signal(self) -> None:
         """Test DualRSIMeanReversion generates SHORT signals."""

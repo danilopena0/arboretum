@@ -294,21 +294,27 @@ class SimulatedBroker(Broker):
     Attributes:
         slippage_model: Model for calculating slippage
         commission_model: Model for calculating commissions
+        fill_at: Price to use for market order fills ("close" or "open")
     """
 
     def __init__(
         self,
         slippage_model: SlippageModel | None = None,
         commission_model: CommissionModel | None = None,
+        fill_at: str = "close",
     ):
         """Initialize simulated broker.
 
         Args:
             slippage_model: Slippage model (default: ZeroSlippage)
             commission_model: Commission model (default: ZeroCommission)
+            fill_at: Price for market order fills - "close" (default) or "open"
         """
+        if fill_at not in ("close", "open"):
+            raise ValueError(f"fill_at must be 'close' or 'open', got '{fill_at}'")
         self.slippage_model = slippage_model or ZeroSlippage()
         self.commission_model = commission_model or ZeroCommission()
+        self.fill_at = fill_at
         self._pending_orders: dict[str, OrderEvent] = {}
         self._fill_count = 0
 
@@ -410,8 +416,8 @@ class SimulatedBroker(Broker):
             Fill price, or None if order cannot be filled
         """
         if order.is_market_order:
-            # Market orders fill at close (simulating execution at bar close)
-            return market.close
+            # Market orders fill at configured price (open or close)
+            return market.open if self.fill_at == "open" else market.close
 
         # Limit order
         if order.limit_price is None:
