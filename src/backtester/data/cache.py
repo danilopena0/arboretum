@@ -87,7 +87,7 @@ class DuckDBCache:
         with self._get_connection() as conn:
             result = conn.execute(
                 f"""
-                SELECT {', '.join(OHLCV_COLUMNS)}
+                SELECT {", ".join(OHLCV_COLUMNS)}
                 FROM {self.TABLE_NAME}
                 WHERE ticker = ?
                   AND timestamp >= ?

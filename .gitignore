@@ -110,3 +110,4 @@ Thumbs.db
 .env.local
 secrets.yaml
 credentials.json
+/docs/backtesting_methodology.md

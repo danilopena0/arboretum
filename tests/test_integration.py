@@ -47,16 +47,16 @@ class TestIntegrationWithRealData:
         assert result.final_equity > 0  # Should still have money
 
         # Print summary
-        print(f"\n{'='*50}")
+        print(f"\n{'=' * 50}")
         print("SPY MA Crossover Backtest Results (2023)")
-        print(f"{'='*50}")
+        print(f"{'=' * 50}")
         print(f"Initial Capital:  ${result.config.initial_capital:,.2f}")
         print(f"Final Equity:     ${result.final_equity:,.2f}")
         print(f"Total Return:     {result.total_return_pct:+.2f}%")
         print(f"Bars Processed:   {result.bars_processed}")
         print(f"Number of Trades: {result.num_trades}")
         print(f"Signals Generated: {len(result.signals)}")
-        print(f"{'='*50}\n")
+        print(f"{'=' * 50}\n")
 
     def test_cache_hit_performance(self) -> None:
         """Test that cached data is used on second run."""

@@ -526,7 +526,7 @@ def _generate_html_report(tearsheet: Tearsheet) -> str:
     <div class="summary-box">
         <div class="summary-stats">
             <div class="stat">
-                <div class="stat-value {'positive' if m.total_return >= 0 else 'negative'}">{m.total_return * 100:+.2f}%</div>
+                <div class="stat-value {"positive" if m.total_return >= 0 else "negative"}">{m.total_return * 100:+.2f}%</div>
                 <div class="stat-label">Total Return</div>
             </div>
             <div class="stat">
@@ -548,8 +548,8 @@ def _generate_html_report(tearsheet: Tearsheet) -> str:
         <div class="metrics-card">
             <h3>Period</h3>
             <table class="metrics-table">
-                <tr><td>Start Date</td><td>{tearsheet.start_date.strftime('%Y-%m-%d') if tearsheet.start_date else '-'}</td></tr>
-                <tr><td>End Date</td><td>{tearsheet.end_date.strftime('%Y-%m-%d') if tearsheet.end_date else '-'}</td></tr>
+                <tr><td>Start Date</td><td>{tearsheet.start_date.strftime("%Y-%m-%d") if tearsheet.start_date else "-"}</td></tr>
+                <tr><td>End Date</td><td>{tearsheet.end_date.strftime("%Y-%m-%d") if tearsheet.end_date else "-"}</td></tr>
                 <tr><td>Bars Processed</td><td>{tearsheet.bars_processed:,}</td></tr>
             </table>
         </div>

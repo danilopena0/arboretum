@@ -872,7 +872,7 @@ def create_comparison_dashboard(
                 name=name,
                 line={"color": color, "width": 1.5},
                 fill="tozeroy",
-                fillcolor=f"rgba{(*[int(color.lstrip('#')[i:i+2], 16) for i in (0, 2, 4)], 0.2)}",
+                fillcolor=f"rgba{(*[int(color.lstrip('#')[i : i + 2], 16) for i in (0, 2, 4)], 0.2)}",
                 legendgroup=name,
                 showlegend=False,
                 hovertemplate=f"{name}<br>Date: %{{x}}<br>Drawdown: %{{y:.1f}}%<extra></extra>",
