@@ -101,9 +101,16 @@ scripts/
 analysis_output/
 
 # =============================================================================
-# Claude Code
+# Claude Code & AI Scaffolding (IP - keep private)
 # =============================================================================
-.claude/settings.local.json
+.claude/
+CLAUDE.md
+ARCHITECTURE.md
+SESSION_CHECKLIST.md
+SESSION_LOG.md
+ITERATION_LOG.md
+WIP_NOTES.md
+LEARNINGS/
 
 # =============================================================================
 # Misc
