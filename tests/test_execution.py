@@ -198,7 +198,7 @@ class TestSimulatedBroker:
         assert len(fills) == 1
         assert fills[0].ticker == "AAPL"
         assert fills[0].quantity == 100
-        assert fills[0].fill_price == pytest.approx(101.0)  # Close price
+        assert fills[0].fill_price == pytest.approx(100.0)  # Open price (default)
         assert len(broker.get_pending_orders()) == 0
 
     def test_slippage_applied(self) -> None:

@@ -176,84 +176,118 @@ class Portfolio:
             slippage: Price slippage
             order_id: Order identifier
         """
-        # Record the trade
+        self._record_trade(timestamp, ticker, quantity, fill_price, commission, slippage, order_id)
+        self._update_cash(quantity, fill_price, commission)
+        self._update_position(ticker, quantity, fill_price)
+        self._current_prices[ticker] = fill_price
+
+    def _record_trade(
+        self,
+        timestamp: datetime,
+        ticker: str,
+        quantity: int,
+        price: float,
+        commission: float,
+        slippage: float,
+        order_id: str,
+    ) -> None:
+        """Record a trade in the trade history."""
         trade = Trade(
             timestamp=timestamp,
             ticker=ticker,
             quantity=quantity,
-            price=fill_price,
+            price=price,
             commission=commission,
             slippage=slippage,
             order_id=order_id,
         )
         self.trades.append(trade)
 
-        # Update cash
+    def _update_cash(self, quantity: int, fill_price: float, commission: float) -> None:
+        """Update cash balance after a trade."""
         trade_value = quantity * fill_price
         self.cash -= trade_value + commission
 
-        # Update position
+    def _update_position(self, ticker: str, quantity: int, fill_price: float) -> None:
+        """Update position after a fill."""
         position = self.get_position(ticker)
         old_quantity = position.quantity
         new_quantity = old_quantity + quantity
 
         if old_quantity == 0:
-            # Opening new position
+            self._open_position(ticker, new_quantity, fill_price)
+        elif self._is_adding_to_position(old_quantity, quantity):
+            self._add_to_position(ticker, position, quantity, new_quantity, fill_price)
+        else:
+            self._reduce_or_close_position(
+                ticker, position, old_quantity, quantity, new_quantity, fill_price
+            )
+
+    def _is_adding_to_position(self, old_quantity: int, quantity: int) -> bool:
+        """Check if trade adds to existing position (same direction)."""
+        return (old_quantity > 0 and quantity > 0) or (old_quantity < 0 and quantity < 0)
+
+    def _open_position(self, ticker: str, quantity: int, fill_price: float) -> None:
+        """Open a new position."""
+        self.positions[ticker] = Position(
+            ticker=ticker,
+            quantity=quantity,
+            avg_cost=fill_price,
+            realized_pnl=0.0,
+        )
+
+    def _add_to_position(
+        self, ticker: str, position: Position, quantity: int, new_quantity: int, fill_price: float
+    ) -> None:
+        """Add to an existing position, updating average cost."""
+        total_cost = abs(position.quantity) * position.avg_cost + abs(quantity) * fill_price
+        new_avg_cost = total_cost / abs(new_quantity)
+        self.positions[ticker] = Position(
+            ticker=ticker,
+            quantity=new_quantity,
+            avg_cost=new_avg_cost,
+            realized_pnl=position.realized_pnl,
+        )
+
+    def _reduce_or_close_position(
+        self,
+        ticker: str,
+        position: Position,
+        old_quantity: int,
+        quantity: int,
+        new_quantity: int,
+        fill_price: float,
+    ) -> None:
+        """Reduce, close, or reverse a position, realizing P&L."""
+        # Calculate realized P&L for closed portion
+        closed_quantity = min(abs(old_quantity), abs(quantity))
+        if old_quantity > 0:
+            realized = closed_quantity * (fill_price - position.avg_cost)
+        else:
+            realized = closed_quantity * (position.avg_cost - fill_price)
+        new_realized_pnl = position.realized_pnl + realized
+
+        if new_quantity == 0:
+            # Position fully closed
+            self.positions[ticker] = Position(
+                ticker=ticker, quantity=0, avg_cost=0.0, realized_pnl=new_realized_pnl
+            )
+        elif abs(new_quantity) < abs(old_quantity):
+            # Position reduced but not closed
+            self.positions[ticker] = Position(
+                ticker=ticker,
+                quantity=new_quantity,
+                avg_cost=position.avg_cost,
+                realized_pnl=new_realized_pnl,
+            )
+        else:
+            # Position reversed (closed and opened opposite)
             self.positions[ticker] = Position(
                 ticker=ticker,
                 quantity=new_quantity,
                 avg_cost=fill_price,
-                realized_pnl=0.0,
+                realized_pnl=new_realized_pnl,
             )
-        elif (old_quantity > 0 and quantity > 0) or (old_quantity < 0 and quantity < 0):
-            # Adding to existing position - update average cost
-            total_cost = abs(old_quantity) * position.avg_cost + abs(quantity) * fill_price
-            new_avg_cost = total_cost / abs(new_quantity)
-            self.positions[ticker] = Position(
-                ticker=ticker,
-                quantity=new_quantity,
-                avg_cost=new_avg_cost,
-                realized_pnl=position.realized_pnl,
-            )
-        else:
-            # Reducing or closing position - realize P&L
-            closed_quantity = min(abs(old_quantity), abs(quantity))
-            if old_quantity > 0:
-                # Was long, selling
-                realized = closed_quantity * (fill_price - position.avg_cost)
-            else:
-                # Was short, buying to cover
-                realized = closed_quantity * (position.avg_cost - fill_price)
-
-            new_realized_pnl = position.realized_pnl + realized
-
-            if new_quantity == 0:
-                # Position fully closed
-                self.positions[ticker] = Position(
-                    ticker=ticker,
-                    quantity=0,
-                    avg_cost=0.0,
-                    realized_pnl=new_realized_pnl,
-                )
-            elif abs(new_quantity) < abs(old_quantity):
-                # Position reduced but not closed
-                self.positions[ticker] = Position(
-                    ticker=ticker,
-                    quantity=new_quantity,
-                    avg_cost=position.avg_cost,
-                    realized_pnl=new_realized_pnl,
-                )
-            else:
-                # Position reversed (closed and opened opposite)
-                self.positions[ticker] = Position(
-                    ticker=ticker,
-                    quantity=new_quantity,
-                    avg_cost=fill_price,
-                    realized_pnl=new_realized_pnl,
-                )
-
-        # Update current price
-        self._current_prices[ticker] = fill_price
 
     @property
     def positions_value(self) -> float:

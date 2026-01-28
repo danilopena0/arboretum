@@ -39,7 +39,8 @@
       "Bash(python scripts/optimize_ema_rsi_portfolio.py:*)",
       "Bash(python scripts/test_sector_aware_robustness.py:*)",
       "Bash(python scripts/validate_strategies.py:*)",
-      "Bash(python scripts/etf_correlation_analysis.py:*)"
+      "Bash(python scripts/etf_correlation_analysis.py:*)",
+      "Bash(/mnt/c/Users/ukule/PycharmProjects/arboretum/.venv/bin/python -m pytest:*)"
     ]
   }
 }

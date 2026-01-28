@@ -164,17 +164,21 @@ class TieredCommission:
     """Volume-based tiered commission structure.
 
     Args:
-        tiers: List of (volume_threshold, rate) tuples, sorted by threshold ascending
-               Rate applies to shares above previous tier's threshold
+        tiers: List of (cumulative_shares, rate) tuples, sorted by shares ascending.
+               Each tuple represents: shares up to this cumulative count use this rate.
+               Example: [(300, 0.0035), (3000, 0.002)] means:
+               - Shares 1-300: $0.0035/share
+               - Shares 301-3000: $0.002/share
     """
 
     def __init__(self, tiers: list[tuple[int, float]] | None = None):
         # Default: lower rates for higher volume
+        # Each tuple is (cumulative_share_count, rate_per_share)
         self.tiers = tiers or [
-            (0, 0.0035),  # First 300 shares: $0.0035/share
-            (300, 0.002),  # 301-3000: $0.002/share
-            (3000, 0.001),  # 3001-20000: $0.001/share
-            (20000, 0.0005),  # 20001+: $0.0005/share
+            (300, 0.0035),  # First 300 shares: $0.0035/share
+            (3000, 0.002),  # 301-3000: $0.002/share
+            (20000, 0.001),  # 3001-20000: $0.001/share
+            (10**9, 0.0005),  # 20001+: $0.0005/share (effectively unlimited)
         ]
 
     def calculate_commission(self, order: OrderEvent, _fill_price: float) -> float:
@@ -186,16 +190,15 @@ class TieredCommission:
             if remaining <= 0:
                 break
 
-            tier_shares = min(remaining, threshold - prev_threshold) if threshold > 0 else remaining
+            # Calculate how many shares fit in this tier
+            tier_capacity = threshold - prev_threshold
+            tier_shares = min(remaining, tier_capacity)
+
             if tier_shares > 0:
                 commission += tier_shares * rate
                 remaining -= tier_shares
 
             prev_threshold = threshold
-
-        # Handle remaining shares at last tier rate
-        if remaining > 0:
-            commission += remaining * self.tiers[-1][1]
 
         return commission
 
@@ -301,14 +304,15 @@ class SimulatedBroker(Broker):
         self,
         slippage_model: SlippageModel | None = None,
         commission_model: CommissionModel | None = None,
-        fill_at: str = "close",
+        fill_at: str = "open",
     ):
         """Initialize simulated broker.
 
         Args:
             slippage_model: Slippage model (default: ZeroSlippage)
             commission_model: Commission model (default: ZeroCommission)
-            fill_at: Price for market order fills - "close" (default) or "open"
+            fill_at: Price for market order fills - "open" (default) or "close".
+                     "open" is more realistic: signal at bar N close → fill at bar N+1 open.
         """
         if fill_at not in ("close", "open"):
             raise ValueError(f"fill_at must be 'close' or 'open', got '{fill_at}'")

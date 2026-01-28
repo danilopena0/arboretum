@@ -276,6 +276,79 @@ class StrategyScanner:
         )
 
 
+def _scan_crossover_strategy(
+    ticker: str,
+    train_start: date,
+    train_end: date,
+    test_start: date,
+    test_end: date,
+    strategy_class: type,
+    fast_periods: list[int] | None = None,
+    slow_periods: list[int] | None = None,
+    data_handler: DataHandler | None = None,
+    config: BacktestConfig | None = None,
+    verbose: bool = True,
+) -> ScanSummary:
+    """Internal helper to scan crossover strategy parameters.
+
+    Args:
+        ticker: Ticker to scan
+        train_start: Training period start
+        train_end: Training period end
+        test_start: Test period start
+        test_end: Test period end
+        strategy_class: Strategy class with fast_period and slow_period params
+        fast_periods: List of fast periods to try
+        slow_periods: List of slow periods to try
+        data_handler: Data handler
+        config: Backtest config
+        verbose: Print progress
+
+    Returns:
+        ScanSummary with results
+    """
+    from backtester.data.yfinance_handler import YFinanceDataHandler
+
+    # Defaults
+    if fast_periods is None:
+        fast_periods = [5, 10, 15, 20]
+    if slow_periods is None:
+        slow_periods = [20, 30, 50, 100]
+    if data_handler is None:
+        data_handler = YFinanceDataHandler()
+    if config is None:
+        config = BacktestConfig(
+            initial_capital=100_000.0,
+            position_size=0.2,
+        )
+
+    # Filter to valid combinations (fast must be < slow)
+    valid_fast = sorted({f for f in fast_periods for s in slow_periods if f < s})
+    valid_slow = sorted({s for f in fast_periods for s in slow_periods if f < s})
+
+    def strategy_factory(params: dict) -> Strategy:
+        return strategy_class(
+            fast_period=params["fast"],
+            slow_period=params["slow"],
+        )
+
+    scanner = StrategyScanner(
+        data_handler=data_handler,
+        strategy_factory=strategy_factory,
+        param_grid={"fast": valid_fast, "slow": valid_slow},
+        config=config,
+    )
+
+    return scanner.scan(
+        ticker=ticker,
+        train_start=train_start,
+        train_end=train_end,
+        test_start=test_start,
+        test_end=test_end,
+        verbose=verbose,
+    )
+
+
 def scan_ma_crossover(
     ticker: str,
     train_start: date,
@@ -313,72 +386,25 @@ def scan_ma_crossover(
             test_start=date(2022, 1, 1),
             test_end=date(2024, 12, 31),
         )
-
-        # Best parameters by out-of-sample performance
         print(summary.best_by_test_sharpe())
-
-        # Best robust parameters (excluding overfit)
-        print(summary.best_robust())
     """
-    from backtester.data.yfinance_handler import YFinanceDataHandler
     from backtester.strategies.examples.moving_average_crossover import (
         MovingAverageCrossover,
     )
 
-    # Defaults
-    if fast_periods is None:
-        fast_periods = [5, 10, 15, 20]
-    if slow_periods is None:
-        slow_periods = [20, 30, 50, 100]
-    if data_handler is None:
-        data_handler = YFinanceDataHandler()
-    if config is None:
-        config = BacktestConfig(
-            initial_capital=100_000.0,
-            position_size=0.2,
-        )
-
-    # Filter invalid combinations (fast must be < slow)
-    valid_fast = []
-    valid_slow = []
-    for f in fast_periods:
-        for s in slow_periods:
-            if f < s:
-                if f not in valid_fast:
-                    valid_fast.append(f)
-                if s not in valid_slow:
-                    valid_slow.append(s)
-
-    def strategy_factory(params: dict) -> Strategy:
-        return MovingAverageCrossover(
-            fast_period=params["fast"],
-            slow_period=params["slow"],
-        )
-
-    # Build param grid filtering invalid combinations
-    param_grid = {
-        "fast": valid_fast,
-        "slow": valid_slow,
-    }
-
-    scanner = StrategyScanner(
-        data_handler=data_handler,
-        strategy_factory=strategy_factory,
-        param_grid=param_grid,
-        config=config,
-    )
-
-    # Run scan
-    summary = scanner.scan(
+    return _scan_crossover_strategy(
         ticker=ticker,
         train_start=train_start,
         train_end=train_end,
         test_start=test_start,
         test_end=test_end,
+        strategy_class=MovingAverageCrossover,
+        fast_periods=fast_periods,
+        slow_periods=slow_periods,
+        data_handler=data_handler,
+        config=config,
         verbose=verbose,
     )
-
-    return summary
 
 
 def scan_ema_crossover(
@@ -418,67 +444,20 @@ def scan_ema_crossover(
             test_start=date(2022, 1, 1),
             test_end=date(2024, 12, 31),
         )
-
-        # Best parameters by out-of-sample performance
         print(summary.best_by_test_sharpe())
-
-        # Best robust parameters (excluding overfit)
-        print(summary.best_robust())
     """
-    from backtester.data.yfinance_handler import YFinanceDataHandler
     from backtester.strategies.examples.ema_crossover import EMACrossover
 
-    # Defaults
-    if fast_periods is None:
-        fast_periods = [5, 10, 15, 20]
-    if slow_periods is None:
-        slow_periods = [20, 30, 50, 100]
-    if data_handler is None:
-        data_handler = YFinanceDataHandler()
-    if config is None:
-        config = BacktestConfig(
-            initial_capital=100_000.0,
-            position_size=0.2,
-        )
-
-    # Filter invalid combinations (fast must be < slow)
-    valid_fast = []
-    valid_slow = []
-    for f in fast_periods:
-        for s in slow_periods:
-            if f < s:
-                if f not in valid_fast:
-                    valid_fast.append(f)
-                if s not in valid_slow:
-                    valid_slow.append(s)
-
-    def strategy_factory(params: dict) -> Strategy:
-        return EMACrossover(
-            fast_period=params["fast"],
-            slow_period=params["slow"],
-        )
-
-    # Build param grid filtering invalid combinations
-    param_grid = {
-        "fast": valid_fast,
-        "slow": valid_slow,
-    }
-
-    scanner = StrategyScanner(
-        data_handler=data_handler,
-        strategy_factory=strategy_factory,
-        param_grid=param_grid,
-        config=config,
-    )
-
-    # Run scan
-    summary = scanner.scan(
+    return _scan_crossover_strategy(
         ticker=ticker,
         train_start=train_start,
         train_end=train_end,
         test_start=test_start,
         test_end=test_end,
+        strategy_class=EMACrossover,
+        fast_periods=fast_periods,
+        slow_periods=slow_periods,
+        data_handler=data_handler,
+        config=config,
         verbose=verbose,
     )
-
-    return summary

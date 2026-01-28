@@ -6,7 +6,7 @@ Uses connection pooling for efficient database access.
 
 from collections.abc import Generator
 from contextlib import contextmanager
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
 
 import duckdb
@@ -140,7 +140,8 @@ class DuckDBCache:
             end: Desired end date
 
         Returns:
-            List of (start, end) tuples representing missing ranges
+            List of (start, end) tuples representing missing ranges.
+            Ranges are adjusted to avoid re-fetching cached boundary dates.
         """
         start_dt = date_to_datetime(start)
         end_dt = date_to_datetime(end)
@@ -153,12 +154,14 @@ class DuckDBCache:
         missing = []
 
         # Check if we need data before the cache
+        # Request up to the day BEFORE cache starts to avoid refetching
         if start_dt < cache_start:
-            missing.append((start_dt, cache_start))
+            missing.append((start_dt, cache_start - timedelta(days=1)))
 
         # Check if we need data after the cache
+        # Request from the day AFTER cache ends to avoid refetching
         if end_dt > cache_end:
-            missing.append((cache_end, end_dt))
+            missing.append((cache_end + timedelta(days=1), end_dt))
 
         return missing
 

@@ -7,7 +7,7 @@ strategies, portfolio, and execution in the correct order.
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Protocol
 
 from backtester.core.events import (
     FillEvent,
@@ -33,6 +33,9 @@ class BacktestConfig:
         initial_capital: Starting portfolio value
         position_size: Default position size as fraction of equity (e.g., 0.1 = 10%)
         max_position_size: Maximum position size as fraction of equity
+        fill_at: Price to use for market order fills.
+            - "open": Fill at next bar's open price (default, more realistic)
+            - "close": Fill at next bar's close price
         snapshot_frequency: How often to capture portfolio state for equity curve tracking.
             - "daily": Snapshot at end of each trading day. Best for most backtests.
               Creates one data point per day for equity curves and drawdown analysis.
@@ -49,6 +52,7 @@ class BacktestConfig:
     initial_capital: float = 100_000.0
     position_size: float = 0.1
     max_position_size: float = 0.25
+    fill_at: str = "open"
     snapshot_frequency: str = "daily"
     scale_by_signal_strength: bool = True
 
@@ -98,6 +102,161 @@ class BacktestResult:
         return len(self.trades)
 
 
+class PositionSizer(Protocol):
+    """Protocol for position sizing strategies.
+
+    Implementations convert signals to orders with appropriate sizing.
+    """
+
+    def size_order(
+        self,
+        signal: SignalEvent,
+        market: MarketEvent,
+        portfolio: Portfolio,
+        config: BacktestConfig,
+    ) -> OrderEvent | None:
+        """Convert a signal to an appropriately sized order.
+
+        Args:
+            signal: Trading signal
+            market: Current market data
+            portfolio: Current portfolio state
+            config: Backtest configuration
+
+        Returns:
+            OrderEvent or None if no order should be placed
+        """
+        ...
+
+
+class EquityBasedPositionSizer:
+    """Default position sizer using percentage of equity.
+
+    Sizes positions based on portfolio equity and signal strength.
+    """
+
+    def size_order(
+        self,
+        signal: SignalEvent,
+        market: MarketEvent,
+        portfolio: Portfolio,
+        config: BacktestConfig,
+    ) -> OrderEvent | None:
+        """Convert a signal to an order based on equity-based sizing."""
+        current_qty = portfolio.get_quantity(signal.ticker)
+        price = market.close
+
+        if signal.signal_type == SignalType.EXIT:
+            return self._handle_exit(signal, current_qty)
+
+        if signal.signal_type == SignalType.LONG:
+            return self._handle_long(signal, price, current_qty, portfolio, config)
+
+        if signal.signal_type == SignalType.SHORT:
+            return self._handle_short(signal, price, current_qty, portfolio, config)
+
+        return None
+
+    def _handle_exit(self, signal: SignalEvent, current_qty: int) -> OrderEvent | None:
+        """Handle EXIT signal - close current position."""
+        if current_qty == 0:
+            return None
+        side = OrderSide.SELL if current_qty > 0 else OrderSide.BUY
+        return create_order(
+            timestamp=signal.timestamp,
+            ticker=signal.ticker,
+            side=side,
+            quantity=abs(current_qty),
+        )
+
+    def _handle_long(
+        self,
+        signal: SignalEvent,
+        price: float,
+        current_qty: int,
+        portfolio: Portfolio,
+        config: BacktestConfig,
+    ) -> OrderEvent | None:
+        """Handle LONG signal - open long or close short."""
+        if current_qty > 0:
+            return None  # Already long
+
+        # Close short if any
+        if current_qty < 0:
+            return create_order(
+                timestamp=signal.timestamp,
+                ticker=signal.ticker,
+                side=OrderSide.BUY,
+                quantity=abs(current_qty),
+            )
+
+        # Calculate position size for new long
+        quantity = self._calculate_quantity(signal, price, portfolio, config)
+        if quantity <= 0:
+            return None
+
+        # Check affordability
+        if not portfolio.can_afford(signal.ticker, quantity, price):
+            quantity = portfolio.max_shares_affordable(price)
+            if quantity <= 0:
+                return None
+
+        return create_order(
+            timestamp=signal.timestamp,
+            ticker=signal.ticker,
+            side=OrderSide.BUY,
+            quantity=quantity,
+        )
+
+    def _handle_short(
+        self,
+        signal: SignalEvent,
+        price: float,
+        current_qty: int,
+        portfolio: Portfolio,
+        config: BacktestConfig,
+    ) -> OrderEvent | None:
+        """Handle SHORT signal - open short or close long."""
+        if current_qty < 0:
+            return None  # Already short
+
+        # Close long if any
+        if current_qty > 0:
+            return create_order(
+                timestamp=signal.timestamp,
+                ticker=signal.ticker,
+                side=OrderSide.SELL,
+                quantity=current_qty,
+            )
+
+        # Calculate position size for new short
+        quantity = self._calculate_quantity(signal, price, portfolio, config)
+        if quantity <= 0:
+            return None
+
+        return create_order(
+            timestamp=signal.timestamp,
+            ticker=signal.ticker,
+            side=OrderSide.SELL,
+            quantity=quantity,
+        )
+
+    def _calculate_quantity(
+        self,
+        signal: SignalEvent,
+        price: float,
+        portfolio: Portfolio,
+        config: BacktestConfig,
+    ) -> int:
+        """Calculate position quantity based on equity and signal strength."""
+        target_value = portfolio.total_equity * config.position_size
+        if config.scale_by_signal_strength:
+            target_value *= signal.strength
+        max_value = portfolio.total_equity * config.max_position_size
+        target_value = min(target_value, max_value)
+        return int(target_value / price)
+
+
 class BacktestEngine:
     """Event-driven backtesting engine.
 
@@ -127,6 +286,7 @@ class BacktestEngine:
         broker: SimulatedBroker | None = None,
         portfolio: Portfolio | None = None,
         config: BacktestConfig | None = None,
+        position_sizer: PositionSizer | None = None,
     ):
         """Initialize the backtesting engine.
 
@@ -136,12 +296,14 @@ class BacktestEngine:
             broker: Simulated broker (default: new SimulatedBroker)
             portfolio: Portfolio tracker (default: new Portfolio)
             config: Backtest configuration (default: BacktestConfig)
+            position_sizer: Position sizing strategy (default: EquityBasedPositionSizer)
         """
         self.data_handler = data_handler
         self.strategy = strategy
         self.config = config or BacktestConfig()
-        self.broker = broker or SimulatedBroker()
+        self.broker = broker or SimulatedBroker(fill_at=self.config.fill_at)
         self.portfolio = portfolio or Portfolio(self.config.initial_capital)
+        self.position_sizer = position_sizer or EquityBasedPositionSizer()
 
         self._signals: list[SignalEvent] = []
         self._bars_processed = 0
@@ -290,7 +452,7 @@ class BacktestEngine:
             self.broker.submit_order(order)
 
     def _signal_to_order(self, signal: SignalEvent, market: MarketEvent) -> OrderEvent | None:
-        """Convert a signal to an order based on position sizing rules.
+        """Convert a signal to an order using the position sizer.
 
         Args:
             signal: Trading signal
@@ -299,93 +461,7 @@ class BacktestEngine:
         Returns:
             OrderEvent or None if no order should be placed
         """
-        current_qty = self.portfolio.get_quantity(signal.ticker)
-        price = market.close
-
-        if signal.signal_type == SignalType.EXIT:
-            # Exit current position
-            if current_qty == 0:
-                return None
-
-            side = OrderSide.SELL if current_qty > 0 else OrderSide.BUY
-            return create_order(
-                timestamp=signal.timestamp,
-                ticker=signal.ticker,
-                side=side,
-                quantity=abs(current_qty),
-            )
-
-        elif signal.signal_type == SignalType.LONG:
-            # Go long
-            if current_qty > 0:
-                return None  # Already long
-
-            # Close short if any
-            if current_qty < 0:
-                return create_order(
-                    timestamp=signal.timestamp,
-                    ticker=signal.ticker,
-                    side=OrderSide.BUY,
-                    quantity=abs(current_qty),
-                )
-
-            # Calculate position size
-            target_value = self.portfolio.total_equity * self.config.position_size
-            if self.config.scale_by_signal_strength:
-                target_value *= signal.strength
-            max_value = self.portfolio.total_equity * self.config.max_position_size
-            target_value = min(target_value, max_value)
-
-            quantity = int(target_value / price)
-            if quantity <= 0:
-                return None
-
-            # Check affordability
-            if not self.portfolio.can_afford(signal.ticker, quantity, price):
-                quantity = self.portfolio.max_shares_affordable(price)
-                if quantity <= 0:
-                    return None
-
-            return create_order(
-                timestamp=signal.timestamp,
-                ticker=signal.ticker,
-                side=OrderSide.BUY,
-                quantity=quantity,
-            )
-
-        elif signal.signal_type == SignalType.SHORT:
-            # Go short
-            if current_qty < 0:
-                return None  # Already short
-
-            # Close long if any
-            if current_qty > 0:
-                return create_order(
-                    timestamp=signal.timestamp,
-                    ticker=signal.ticker,
-                    side=OrderSide.SELL,
-                    quantity=current_qty,
-                )
-
-            # Calculate position size for short
-            target_value = self.portfolio.total_equity * self.config.position_size
-            if self.config.scale_by_signal_strength:
-                target_value *= signal.strength
-            max_value = self.portfolio.total_equity * self.config.max_position_size
-            target_value = min(target_value, max_value)
-
-            quantity = int(target_value / price)
-            if quantity <= 0:
-                return None
-
-            return create_order(
-                timestamp=signal.timestamp,
-                ticker=signal.ticker,
-                side=OrderSide.SELL,
-                quantity=quantity,
-            )
-
-        return None
+        return self.position_sizer.size_order(signal, market, self.portfolio, self.config)
 
     def _process_fill(self, fill: FillEvent) -> None:
         """Process a fill event and update portfolio.
